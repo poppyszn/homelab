@@ -1,0 +1,37 @@
+services:
+  etcd:
+    image: public.ecr.aws/bitnami/etcd:latest
+    container_name: etcd
+    restart: always
+    network_mode: host
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_NAME=etcd0
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://127.0.0.1:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://127.0.0.1:2380
+      - ETCD_INITIAL_CLUSTER=etcd0=http://127.0.0.1:2380
+      - ETCD_INITIAL_CLUSTER_TOKEN=k3s-etcd-cluster
+      - ETCD_INITIAL_CLUSTER_STATE=new
+    volumes:
+      - /srv/etcd/data:/bitnami/etcd/data
+
+  nfs-server:
+    image: erichough/nfs-server
+    container_name: nfs-server
+    privileged: true
+    restart: always
+    ports:
+      - "2049:2049"
+      - "2049:2049/udp"
+      - "111:111"
+      - "111:111/udp"
+      - "32765:32765"
+      - "32765:32765/udp"
+      - "32767:32767"
+      - "32767:32767/udp"
+    environment:
+      - NFS_EXPORT_0=/nfs-share *(rw,sync,no_subtree_check,fsid=0,no_root_squash)
+    volumes:
+      - /srv/nfs/k8s-storage:/nfs-share

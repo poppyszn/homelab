@@ -1,0 +1,85 @@
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb:/var/lib/influxdb
+
+  telegraf:
+    image: telegraf-speedtest
+    container_name: telegraf
+    depends_on:
+      - influxdb
+    volumes:
+      - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    hostname: serve-pops-laptop
+    ports:
+      - "3100:3100"
+    volumes:
+     - ./config/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: serve-pops-laptop
+    command:
+      - --web.enable-remote-write-receiver
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+   image: grafana/grafana:latest
+   container_name: grafana
+   hostname: serve-pops-laptop
+   environment:
+     - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+     - GF_AUTH_ANONYMOUS_ENABLED=true
+     - GF_AUTH_BASIC_ENABLED=false
+   ports:
+     - 3000:3000/tcp
+   volumes:
+     - ./grafana/datasources/default.yml:/etc/grafana/provisioning/datasources/ds.yaml
+   entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        /run.sh
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    hostname: serve-pops-laptop
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '--docker_only=true'
+
+  alloy:
+   image: grafana/alloy:latest
+   container_name: alloy
+   hostname: serve-pops-laptop
+   privileged: true
+   ports:
+     - 12345:12345
+     - 4317:4317
+     - 4318:4318
+   volumes:
+     - ./config/config.alloy:/etc/alloy/config.alloy
+     - /var/run/docker.sock:/var/run/docker.sock:ro
+   command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
