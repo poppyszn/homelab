@@ -1,1 +1,4 @@
 */.env
+k3s/registries.yaml
+harbor/values.yaml
+argocd/ingress.yaml

@@ -1,0 +1,19 @@
+# This file goes on the HOST at: /etc/rancher/k3s/registries.yaml
+# It is NOT a Kubernetes manifest — it configures the K3s container runtime.
+#
+# After editing, restart K3s:
+#   sudo systemctl restart k3s
+#
+# In production, replace admin credentials with a Harbor robot account:
+#   Harbor UI → Administration → Robot Accounts → New Robot Account
+
+mirrors:
+  harbor.yourdomain.com:       # Replace with your Harbor domain
+    endpoint:
+      - "https://harbor.yourdomain.com"
+
+configs:
+  "harbor.yourdomain.com":
+    auth:
+      username: YOUR_ROBOT_ACCOUNT_USER   # Use a Harbor robot account, not admin
+      password: YOUR_ROBOT_ACCOUNT_TOKEN  # Replace — never commit a real credential

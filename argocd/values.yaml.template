@@ -1,0 +1,7 @@
+server:
+  service:
+    type: LoadBalancer
+
+configs:
+  params:
+    server.insecure: true   # Required so Traefik/Cloudflare can terminate TLS without a redirect loop
