@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uptime-kuma-ingress
+  namespace: monitoring
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: status.dev-pops.site
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: uptime-kuma
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - status.dev-pops.site
+    secretName: uptime-kuma-tls

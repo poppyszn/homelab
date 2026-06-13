@@ -1,0 +1,8 @@
+persistence:
+  enabled: true
+  storageClassName: local-path   # K3s built-in provisioner
+  size: 1Gi
+
+service:
+  type: ClusterIP
+  port: 80
