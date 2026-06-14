@@ -89,7 +89,7 @@ vault write auth/kubernetes/role/vso-reader \
 helm install vault-secrets-operator hashicorp/vault-secrets-operator \
   --namespace vault-secrets-operator-system \
   --create-namespace \
-  --version 0.7.1 \
+  --version 1.4.0 \
   --wait
 
 kubectl get pods -n vault-secrets-operator-system
