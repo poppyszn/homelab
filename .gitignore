@@ -2,4 +2,5 @@
 k3s/registries.yaml
 harbor/values.yaml
 argocd/ingress.yaml
+vault-init.json
 .claude/settings.json

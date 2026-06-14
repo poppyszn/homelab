@@ -14,6 +14,8 @@ A single-node K3s cluster on Ubuntu 24.04 with a production-grade toolchain.
 | Harbor | Latest (goharbor) | Private container registry |
 | ArgoCD | Latest (argo-helm) | GitOps CD |
 | cloudflared | Latest | Cloudflare Tunnel (zero open ports) |
+| Vault | Latest (HashiCorp Helm) | Secret store (standalone + Raft) |
+| Vault Secrets Operator | v0.7.1 | Syncs Vault secrets → K8s Secrets |
 
 ---
 
@@ -41,9 +43,13 @@ homelab/
 │   ├── secret.yaml                # Token secret placeholder (do not commit real values)
 │   ├── deployment.yaml            # cloudflared Deployment (2 replicas)
 │   └── INSTALL.md
-└── k3s/
-    ├── registries.yaml            # K3s registry config (gitignored — copy from template)
-    └── registries.yaml.template   # Safe-to-commit template with placeholders
+├── k3s/
+│   ├── registries.yaml            # K3s registry config (gitignored — copy from template)
+│   └── registries.yaml.template   # Safe-to-commit template with placeholders
+└── vault/
+    ├── values.yaml                # Vault Helm values (standalone + Raft)
+    ├── vso-connection.yaml        # VaultConnection + VaultAuth for VSO
+    └── INSTALL.md
 ```
 
 ---
@@ -178,6 +184,29 @@ sudo cp k3s/registries.yaml /etc/rancher/k3s/registries.yaml
 sudo systemctl restart k3s
 ```
 
+### Vault + Vault Secrets Operator
+
+See [vault/INSTALL.md](vault/INSTALL.md) for the full setup (init, unseal, KV engine, VSO wiring).
+
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com && helm repo update
+
+helm install vault hashicorp/vault \
+  --namespace vault \
+  --create-namespace \
+  --values vault/values.yaml \
+  --wait
+
+# After init + unseal (see vault/INSTALL.md):
+helm install vault-secrets-operator hashicorp/vault-secrets-operator \
+  --namespace vault-secrets-operator-system \
+  --create-namespace \
+  --version 0.7.1 \
+  --wait
+
+kubectl apply -f vault/vso-connection.yaml
+```
+
 ---
 
 ## Cloudflare Tunnel — Service Routing
@@ -193,7 +222,7 @@ In Cloudflare Zero Trust → Tunnels → Public Hostnames, route through Traefik
 
 ## Security Notes
 
-- **Never commit real secrets.** Use the `cloudflared/secret.yaml` as a reference only.
+- **Never commit real secrets.** `vault-init.json` (unseal key + root token) is gitignored — save it in a password manager.
 - Use a **Harbor robot account** in `k3s/registries.yaml` instead of admin credentials.
 - Change the ArgoCD admin password after first login.
-- Consider [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) or [External Secrets Operator](https://external-secrets.io) for secret management in Git.
+- **Do not expose Vault through Cloudflare Tunnel** — use `kubectl port-forward` for UI access instead.

@@ -1,0 +1,27 @@
+server:
+  ha:
+    enabled: false
+  dataStorage:
+    enabled: true
+    storageClass: local-path
+    size: 5Gi
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+      storage "raft" {
+        path = "/vault/data"
+      }
+  service:
+    enabled: true
+
+ui:
+  enabled: true
+
+injector:
+  enabled: false   # VSO handles secret sync — agent injector not needed
