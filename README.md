@@ -17,7 +17,7 @@ Docker Compose media server (Dell Latitude E6510, Ubuntu Server). Built up one p
 | Recyclarr | - | TRaSH quality profile sync |
 | Dozzle | 8888 | Container logs |
 | WUD | 3002 | Image update checker |
-| Homepage | 3000 | Dashboard |
+| Homepage | 80 | Dashboard |
 
 ## Storage
 

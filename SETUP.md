@@ -66,7 +66,7 @@ After filling the keys in `.env`:
 ```bash
 docker compose up -d
 ```
-This recreates Homepage and Recyclarr with the new values. Homepage is at :3000, WUD (updates) at :3002, Dozzle (logs) at :8888.
+This recreates Homepage and Recyclarr with the new values. Homepage is at http://SERVER_IP (port 80), WUD (updates) at :3002, Dozzle (logs) at :8888.
 
 ## 9. Check hardlinks work
 Import a download, then compare inodes. The link count should be 2 and the inode numbers equal:

@@ -202,7 +202,8 @@ services:
       # socket. The gid is host-specific: `getent group docker | cut -d: -f3`.
       PGID: ${DOCKER_GID}
       # Homepage refuses connections unless the Host header matches.
-      HOMEPAGE_ALLOWED_HOSTS: ${SERVER_IP}:3000,localhost:3000
+      # Host header must match. Add a Tailscale name via HOMEPAGE_EXTRA_HOSTS.
+      HOMEPAGE_ALLOWED_HOSTS: ${SERVER_IP},localhost,${HOMEPAGE_EXTRA_HOSTS:-localhost}
       HOMEPAGE_VAR_HOST: ${SERVER_IP}
       HOMEPAGE_VAR_SONARR_KEY: ${SONARR_API_KEY}
       HOMEPAGE_VAR_RADARR_KEY: ${RADARR_API_KEY}
@@ -220,4 +221,4 @@ services:
       # Read-only so the disk widget sees real usage.
       - ${DATA}:/data:ro
     ports:
-      - 3000:3000
+      - 80:3000
