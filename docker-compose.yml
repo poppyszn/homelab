@@ -195,12 +195,12 @@ services:
     <<: *common
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
-    # Lets the non-root Homepage user read the Docker socket. The gid is
-    # host-specific: `getent group docker | cut -d: -f3`.
-    group_add:
-      - "${DOCKER_GID}"
     environment:
       <<: *common-env
+      # Homepage's entrypoint drops privileges and discards group_add, so the
+      # docker group must be the PRIMARY group for it to read the Docker
+      # socket. The gid is host-specific: `getent group docker | cut -d: -f3`.
+      PGID: ${DOCKER_GID}
       # Homepage refuses connections unless the Host header matches.
       HOMEPAGE_ALLOWED_HOSTS: ${SERVER_IP}:3000,localhost:3000
       HOMEPAGE_VAR_HOST: ${SERVER_IP}
