@@ -183,6 +183,9 @@ services:
       TZ: ${TZ}
       WUD_WATCHER_LOCAL_CRON: "0 6 * * *"
       WUD_WATCHER_LOCAL_WATCHBYDEFAULT: "true"
+      # WUD refuses to start without an admin login.
+      WUD_AUTH_ADMIN_USER: ${WUD_USER}
+      WUD_AUTH_ADMIN_PASSWORD: ${WUD_PASS}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -209,6 +212,8 @@ services:
       HOMEPAGE_VAR_SEERR_KEY: ${SEERR_API_KEY}
       HOMEPAGE_VAR_QBT_USER: ${QBT_USER}
       HOMEPAGE_VAR_QBT_PASS: ${QBT_PASS}
+      HOMEPAGE_VAR_WUD_USER: ${WUD_USER}
+      HOMEPAGE_VAR_WUD_PASS: ${WUD_PASS}
     volumes:
       - ${APPDATA}/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
