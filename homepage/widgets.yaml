@@ -1,0 +1,27 @@
+---
+# Disk is the widget that matters here. An SMR drive slows down sharply as it
+# fills, so treat 85% as full rather than 100%.
+
+- resources:
+    cpu: true
+    memory: true
+    cputemp: true
+    tempmin: 20
+    tempmax: 95
+    uptime: true
+
+- resources:
+    label: Media disk
+    disk:
+      - /data
+    expanded: true
+
+- resources:
+    label: System disk
+    disk:
+      - /
+
+- search:
+    provider: duckduckgo
+    target: _blank
+

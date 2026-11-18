@@ -1,0 +1,87 @@
+---
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8096
+        server: my-docker
+        container: jellyfin
+        widget:
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+          enableBlocks: true
+    - Seerr:
+        icon: jellyseerr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:5055
+        server: my-docker
+        container: seerr
+        widget:
+          type: jellyseerr   # Seerr is API-compatible with Jellyseerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+
+- Library:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8989
+        server: my-docker
+        container: sonarr
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:7878
+        server: my-docker
+        container: radarr
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:9696
+        server: my-docker
+        container: prowlarr
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+    - Bazarr:
+        icon: bazarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:6767
+        server: my-docker
+        container: bazarr
+        widget:
+          type: bazarr
+          url: http://bazarr:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_KEY}}"
+
+- Downloads:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8080
+        server: my-docker
+        container: qbittorrent
+        widget:
+          type: qbittorrent
+          url: http://qbittorrent:8080
+          username: "{{HOMEPAGE_VAR_QBT_USER}}"
+          password: "{{HOMEPAGE_VAR_QBT_PASS}}"
+
+- Operations:
+    - Dozzle:
+        icon: dozzle.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8888
+        description: Container logs
+        server: my-docker
+        container: dozzle
+    - Updates:
+        icon: whats-up-docker.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:3002
+        server: my-docker
+        container: wud
+        widget:
+          type: whatsupdocker
+          url: http://wud:3000

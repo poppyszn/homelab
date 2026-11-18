@@ -1,0 +1,5 @@
+---
+# Lets Homepage show running/stopped state per service via the mounted socket.
+my-docker:
+  socket: /var/run/docker.sock
+

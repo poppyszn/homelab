@@ -1,0 +1,27 @@
+# Recyclarr v8 config for Sonarr. Synced nightly (see CRON_SCHEDULE in compose).
+# API key comes from the container env, never from this file.
+sonarr:
+  tv:
+    base_url: http://sonarr:8989
+    api_key: !env_var SONARR_API_KEY
+
+    delete_old_custom_formats: true
+
+    quality_definition:
+      type: series
+
+    quality_profiles:
+      - trash_id: 72dae194fc92bf828f32cde7744e51a1  # WEB-1080p
+        reset_unmatched_scores:
+          enabled: true
+
+    # Naming: run `docker exec recyclarr recyclarr list naming sonarr`, pick the
+    # Jellyfin-flavoured keys from the "Key" column, then uncomment:
+    # media_naming:
+    #   series: <key>
+    #   season: <key>
+    #   episodes:
+    #     rename: true
+    #     standard: <key>
+    #     daily: <key>
+    #     anime: <key>

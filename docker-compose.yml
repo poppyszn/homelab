@@ -1,0 +1,218 @@
+# Media server stack for a single Dell Latitude E6510 (Ubuntu Server). LAN only.
+#
+# Storage layout:
+#   SSD  /            OS, Docker, and ${APPDATA} (databases, configs)
+#   HDD  /data        media + torrents only (1TB SMR, in the caddy)
+#
+# Constraints baked into this file. Changing them breaks things quietly:
+#
+#   0. NO HARDWARE ENCODING. The Ironlake iGPU decodes but cannot encode, and
+#      the i5-560M predates AVX. Nothing maps /dev/dri. Direct play only.
+#
+#   1. ONE BIND MOUNT OF ${DATA}, NOT SEVERAL. Separate mounts of torrents/ and
+#      media/ are different mount points inside the container, so hardlinks
+#      fail and every import becomes a full copy. Mount the parent.
+#
+#   2. SMR DATA DISK. Download once (sequential), rename on complete, hardlink
+#      on import. Keep torrents/incomplete on the HDD, same filesystem.
+
+name: media
+
+x-common: &common
+  restart: unless-stopped
+  dns_opt:
+    - no-aaaa
+  environment: &common-env
+    PUID: ${PUID}
+    PGID: ${PGID}
+    TZ: ${TZ}
+    UMASK: "002"
+
+services:
+
+  qbittorrent:
+    <<: *common
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      <<: *common-env
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 6881
+    volumes:
+      - ${APPDATA}/qbittorrent:/config
+      - ${DATA}:/data          # parent mount - see constraint 1 above
+    ports:
+      - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
+
+  prowlarr:
+    <<: *common
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    volumes:
+      - ${APPDATA}/prowlarr:/config
+    ports:
+      - 9696:9696
+
+  sonarr:
+    <<: *common
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    volumes:
+      - ${APPDATA}/sonarr:/config
+      - ${DATA}:/data          # parent mount - see constraint 1 above
+    ports:
+      - 8989:8989
+
+  radarr:
+    <<: *common
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    volumes:
+      - ${APPDATA}/radarr:/config
+      - ${DATA}:/data          # parent mount - see constraint 1 above
+    ports:
+      - 7878:7878
+
+  bazarr:
+    <<: *common
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    volumes:
+      - ${APPDATA}/bazarr:/config
+      - ${DATA}/media:/data/media
+    ports:
+      - 6767:6767
+
+  # Cloudflare challenge solver (FlareSolverr-compatible API, same port).
+  # Heavy: a real browser on two cores solves slowly (30s+). In Prowlarr,
+  # attach it by TAG only to indexers that need it. Not published on the host;
+  # Prowlarr reaches it at http://byparr:8191 on the compose network.
+  # Deliberately :latest, since this is cat-and-mouse against Cloudflare.
+  byparr:
+    <<: *common
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: byparr
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: info
+      PORT: 8191
+    # Browsers crash with Docker's default 64MB /dev/shm.
+    shm_size: 512mb
+    # Browser scratch in RAM, never on disk.
+    tmpfs:
+      - /tmp:size=256m
+    # Hard memory ceiling; soft CPU weight so it yields to Jellyfin.
+    mem_limit: 2g
+    cpu_shares: 256
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8191/health"]
+      interval: 300s
+      timeout: 60s
+      retries: 3
+      start_period: 120s
+
+  jellyfin:
+    <<: *common
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    volumes:
+      - ${APPDATA}/jellyfin:/config
+      - ${DATA}/media:/data/media:ro
+    # Transcode scratch in RAM. You should essentially never transcode, but
+    # when a client forces it this keeps the churn off the disks.
+    tmpfs:
+      - /config/data/transcodes:size=2g,mode=1777
+    ports:
+      - 8096:8096
+    # Deliberately no `devices: /dev/dri`. Leave hardware acceleration set to
+    # None in Jellyfin's playback settings.
+
+  # Request UI. Not a LinuxServer image, so it ignores PUID/PGID; the explicit
+  # `user:` makes it run as you, matching ownership of ${APPDATA}/seerr.
+  seerr:
+    <<: *common
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    user: "${PUID}:${PGID}"
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: info
+    volumes:
+      - ${APPDATA}/seerr:/app/config
+    ports:
+      - 5055:5055
+
+  # Syncs TRaSH quality profiles into Sonarr/Radarr on a schedule.
+  # No `latest` tag is published; pin the major version.
+  recyclarr:
+    <<: *common
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    user: ${PUID}:${PGID}
+    environment:
+      TZ: ${TZ}
+      CRON_SCHEDULE: "0 4 * * *"
+      # Referenced from the Recyclarr config as `api_key: !env_var SONARR_API_KEY`
+      # so keys never get committed into the config file.
+      SONARR_API_KEY: ${SONARR_API_KEY}
+      RADARR_API_KEY: ${RADARR_API_KEY}
+    volumes:
+      - ${APPDATA}/recyclarr:/config
+
+  # Docker log viewer in the browser. No database.
+  dozzle:
+    <<: *common
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    environment:
+      TZ: ${TZ}
+      DOZZLE_NO_ANALYTICS: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 8888:8080
+
+  # Shows which images have a newer version. Watches only; never updates.
+  wud:
+    <<: *common
+    image: getwud/wud:latest
+    container_name: wud
+    environment:
+      TZ: ${TZ}
+      WUD_WATCHER_LOCAL_CRON: "0 6 * * *"
+      WUD_WATCHER_LOCAL_WATCHBYDEFAULT: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 3002:3000
+
+  homepage:
+    <<: *common
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    # Lets the non-root Homepage user read the Docker socket. The gid is
+    # host-specific: `getent group docker | cut -d: -f3`.
+    group_add:
+      - "${DOCKER_GID}"
+    environment:
+      <<: *common-env
+      # Homepage refuses connections unless the Host header matches.
+      HOMEPAGE_ALLOWED_HOSTS: ${SERVER_IP}:3000,localhost:3000
+      HOMEPAGE_VAR_HOST: ${SERVER_IP}
+      HOMEPAGE_VAR_SONARR_KEY: ${SONARR_API_KEY}
+      HOMEPAGE_VAR_RADARR_KEY: ${RADARR_API_KEY}
+      HOMEPAGE_VAR_PROWLARR_KEY: ${PROWLARR_API_KEY}
+      HOMEPAGE_VAR_BAZARR_KEY: ${BAZARR_API_KEY}
+      HOMEPAGE_VAR_JELLYFIN_KEY: ${JELLYFIN_API_KEY}
+      HOMEPAGE_VAR_SEERR_KEY: ${SEERR_API_KEY}
+      HOMEPAGE_VAR_QBT_USER: ${QBT_USER}
+      HOMEPAGE_VAR_QBT_PASS: ${QBT_PASS}
+    volumes:
+      - ${APPDATA}/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Read-only so the disk widget sees real usage.
+      - ${DATA}:/data:ro
+    ports:
+      - 3000:3000

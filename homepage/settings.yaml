@@ -1,0 +1,22 @@
+---
+title: Media Server
+description: E6510
+
+theme: dark
+color: slate
+headerStyle: clean
+
+layout:
+  Media:
+    style: row
+    columns: 2
+  Library:
+    style: row
+    columns: 4
+  Downloads:
+    style: row
+    columns: 1
+  Operations:
+    style: row
+    columns: 2
+
